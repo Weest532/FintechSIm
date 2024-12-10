@@ -20,7 +20,7 @@ class Bank {
     }
 
     // Fetch account details from the database
-    private fun getAccount(accountId: String): Account? {
+    fun getAccount(accountId: String): Account? {
         val sql = "SELECT * FROM accounts WHERE account_id = ?"
         val preparedStatement = connection.prepareStatement(sql)
         preparedStatement.setString(1, accountId)
