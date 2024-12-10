@@ -5,7 +5,7 @@ object DatabaseHelper {
     private const val DB_URL = "jdbc:sqlite:fintech_simulation.db" // SQLite database file
 
     // Initialize the database connection
-    private fun connect(): Connection {
+    fun connect(): Connection {
         return DriverManager.getConnection(DB_URL)
     }
 

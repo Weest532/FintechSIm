@@ -1,77 +1,90 @@
-import java.util.UUID // For generating unique IDs for accounts and transactions
+import java.sql.Connection
 
 class Bank {
-    // A map to store accounts with account IDs as keys
-    private val accounts = mutableMapOf<String, Account>()
+    private val connection: Connection = DatabaseHelper.connect()
 
-    // Creates a new account and returns its unique ID
+    // Create a new account in the database
     fun createAccount(holderName: String): String {
-        val accountId = UUID.randomUUID().toString() // Generate a unique account ID
-        val account = Account(accountId, holderName, 0.0) // Create a new account with initial balance of 0
-        accounts[accountId] = account // Add the account to the accounts map
-        println("Account created for $holderName with ID $accountId.") // Confirmation message
-        return accountId // Return the newly created account ID
+        val accountId = java.util.UUID.randomUUID().toString() // Generate unique account ID
+        val sql = "INSERT INTO accounts (account_id, account_holder, balance) VALUES (?, ?, ?)"
+
+        val preparedStatement = connection.prepareStatement(sql)
+        preparedStatement.setString(1, accountId)
+        preparedStatement.setString(2, holderName)
+        preparedStatement.setDouble(3, 0.0) // Initial balance is 0
+        preparedStatement.executeUpdate()
+        preparedStatement.close()
+
+        println("Account created for $holderName with ID $accountId.")
+        return accountId
     }
 
-    // Adds a specified amount to the account balance
+    // Fetch account details from the database
+    private fun getAccount(accountId: String): Account? {
+        val sql = "SELECT * FROM accounts WHERE account_id = ?"
+        val preparedStatement = connection.prepareStatement(sql)
+        preparedStatement.setString(1, accountId)
+
+        val resultSet = preparedStatement.executeQuery()
+        if (resultSet.next()) {
+            val account = Account(
+                accountId = resultSet.getString("account_id"),
+                accountHolder = resultSet.getString("account_holder"),
+                balance = resultSet.getDouble("balance")
+            )
+            preparedStatement.close()
+            return account
+        }
+
+        preparedStatement.close()
+        return null // Return null if account not found
+    }
+
+    // Update account balance in the database
+    private fun updateBalance(accountId: String, newBalance: Double) {
+        val sql = "UPDATE accounts SET balance = ? WHERE account_id = ?"
+
+        val preparedStatement = connection.prepareStatement(sql)
+        preparedStatement.setDouble(1, newBalance)
+        preparedStatement.setString(2, accountId)
+        preparedStatement.executeUpdate()
+        preparedStatement.close()
+    }
+
+    // Record a transaction in the database
+    private fun recordTransaction(accountId: String, type: TransactionType, amount: Double) {
+        val transactionId = java.util.UUID.randomUUID().toString()
+        val sql = "INSERT INTO transactions (transaction_id, account_id, type, amount, timestamp) VALUES (?, ?, ?, ?, ?)"
+
+        val preparedStatement = connection.prepareStatement(sql)
+        preparedStatement.setString(1, transactionId)
+        preparedStatement.setString(2, accountId)
+        preparedStatement.setString(3, type.name)
+        preparedStatement.setDouble(4, amount)
+        preparedStatement.setLong(5, System.currentTimeMillis())
+        preparedStatement.executeUpdate()
+        preparedStatement.close()
+    }
+
+    // Modified deposit method to include database operations
     fun deposit(accountId: String, amount: Double) {
-        val account = accounts[accountId] ?: throw IllegalArgumentException("Account not found") // Get the account or throw an error
-        account.balance += amount // Increase the account balance
-        // Add a transaction record for the deposit
-        account.transactions.add(Transaction(UUID.randomUUID().toString(), TransactionType.DEPOSIT, amount))
-        println("Deposited $amount to account $accountId. New balance: ${account.balance}.") // Confirmation message
+        val account = getAccount(accountId) ?: throw IllegalArgumentException("Account not found")
+        val newBalance = account.balance + amount
+        updateBalance(accountId, newBalance) // Update balance in the database
+        recordTransaction(accountId, TransactionType.DEPOSIT, amount) // Record the transaction
+        println("Deposited $amount to account $accountId. New balance: $newBalance.")
     }
 
-    // Deducts a specified amount from the account balance
+    // Modified withdraw method to include database operations
     fun withdraw(accountId: String, amount: Double) {
-        val account = accounts[accountId] ?: throw IllegalArgumentException("Account not found") // Get the account or throw an error
-        if (account.balance < amount) { // Check for sufficient funds
-            println("Insufficient funds.") // Error message
+        val account = getAccount(accountId) ?: throw IllegalArgumentException("Account not found")
+        if (account.balance < amount) {
+            println("Insufficient funds.")
             return
         }
-        account.balance -= amount // Decrease the account balance
-        // Add a transaction record for the withdrawal
-        account.transactions.add(Transaction(UUID.randomUUID().toString(), TransactionType.WITHDRAW, amount))
-        println("Withdrew $amount from account $accountId. New balance: ${account.balance}.") // Confirmation message
+        val newBalance = account.balance - amount
+        updateBalance(accountId, newBalance) // Update balance in the database
+        recordTransaction(accountId, TransactionType.WITHDRAW, amount) // Record the transaction
+        println("Withdrew $amount from account $accountId. New balance: $newBalance.")
     }
-    // Transfers a specified amount from one account to another
-    fun transfer(fromAccountId: String, toAccountId: String, amount: Double) {
-        withdraw(fromAccountId, amount) // Withdraw from the source account
-        deposit(toAccountId, amount) // Deposit to the destination account
-        println("Transferred $amount from $fromAccountId to $toAccountId.") // Confirmation message
-    }
-
-    // Displays the details of an account, including balance and transaction history
-    fun viewAccount(accountId: String) {
-        val account = accounts[accountId] ?: throw IllegalArgumentException("Account not found") // Get the account or throw an error
-        println("Account ID: ${account.accountId}") // Print account ID
-        println("Holder: ${account.accountHolder}") // Print account holder's name
-        println("Balance: ${account.balance}") // Print account balance
-        println("Transactions: ${account.transactions}") // Print transaction history
-    }
-
-    // Applies interest to a savings account based on a given interest rate
-    fun applyInterest(accountId: String, interestRate: Double) {
-        val account = accounts[accountId] ?: throw IllegalArgumentException("Account not found") // Get the account or throw an error
-        val interest = account.balance * (interestRate / 100) // Calculate interest as a percentage of the balance
-        account.balance += interest // Add the interest to the account balance
-        // Add a transaction record for the interest applied
-        account.transactions.add(Transaction(UUID.randomUUID().toString(), TransactionType.DEPOSIT, interest))
-        println("Applied $interest as interest to account $accountId. New balance: ${account.balance}.") // Confirmation message
-    }
-
-    // Generates an account statement with details about transactions and the current balance
-    fun generateStatement(accountId: String): String {
-        val account = accounts[accountId] ?: throw IllegalArgumentException("Account not found") // Get the account or throw an error
-        val builder = StringBuilder() // StringBuilder for efficient string concatenation
-        builder.append("Account Statement for ${account.accountHolder}\n") // Add header
-        builder.append("Account ID: ${account.accountId}\n") // Add account ID
-        builder.append("Balance: ${account.balance}\n") // Add current balance
-        builder.append("Transactions:\n") // Add transactions header
-        for (transaction in account.transactions) { // Iterate over all transactions
-            builder.append("${transaction.timestamp} - ${transaction.type} - Amount: ${transaction.amount}\n") // Append transaction details
-        }
-        return builder.toString() // Return the statement as a string
-    }
-
 }
