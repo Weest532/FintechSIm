@@ -2,19 +2,20 @@ fun main() {
     DatabaseHelper.initializeDatabase() // Ensure tables are created
     val bank = Bank()
 
-    // Create accounts
-    val aliceId = bank.createAccount("Alice")
-    val bobId = bank.createAccount("Bob")
+    // Create a new account with a password
+    val aliceId = bank.createAccount("Alice", "securePassword123")
 
-    // Perform transactions
-    bank.deposit(aliceId, 500.0)
-    bank.withdraw(aliceId, 100.0)
-    bank.deposit(bobId, 1000.0)
+    // Attempt to log in with the correct password
+    if (bank.login(aliceId, "securePassword123")) {
+        println("Login successful for Alice!")
+    } else {
+        println("Login failed for Alice.")
+    }
 
-    // View updated account details
-    val aliceAccount = bank.getAccount(aliceId)
-    println("Alice's account: $aliceAccount")
-
-    val bobAccount = bank.getAccount(bobId)
-    println("Bob's account: $bobAccount")
+    // Attempt to log in with an incorrect password
+    if (bank.login(aliceId, "wrongPassword")) {
+        println("Login successful for Alice!")
+    } else {
+        println("Login failed for Alice.")
+    }
 }

@@ -4,19 +4,39 @@ class Bank {
     private val connection: Connection = DatabaseHelper.connect()
 
     // Create a new account in the database
-    fun createAccount(holderName: String): String {
+    fun createAccount(holderName: String, plainTextPassword: String): String {
         val accountId = java.util.UUID.randomUUID().toString() // Generate unique account ID
-        val sql = "INSERT INTO accounts (account_id, account_holder, balance) VALUES (?, ?, ?)"
+        val hashedPassword = PasswordUtil.hashPassword(plainTextPassword) // Hash the provided password
+        val sql = "INSERT INTO accounts (account_id, account_holder, balance, password) VALUES (?, ?, ?, ?)"
 
         val preparedStatement = connection.prepareStatement(sql)
         preparedStatement.setString(1, accountId)
         preparedStatement.setString(2, holderName)
         preparedStatement.setDouble(3, 0.0) // Initial balance is 0
+        preparedStatement.setString(4, hashedPassword) // Store the hashed password
         preparedStatement.executeUpdate()
         preparedStatement.close()
 
         println("Account created for $holderName with ID $accountId.")
         return accountId
+    }
+
+    // Authenticate a user with their account ID and password
+    fun login(accountId: String, plainTextPassword: String): Boolean {
+        val sql = "SELECT password FROM accounts WHERE account_id = ?"
+        val preparedStatement = connection.prepareStatement(sql)
+        preparedStatement.setString(1, accountId)
+
+        val resultSet = preparedStatement.executeQuery()
+        if (resultSet.next()) {
+            val storedHash = resultSet.getString("password") // Retrieve the stored hashed password
+            preparedStatement.close()
+            return PasswordUtil.verifyPassword(plainTextPassword, storedHash) // Verify the password
+        }
+
+        preparedStatement.close()
+        println("Account not found.")
+        return false
     }
 
     // Fetch account details from the database
