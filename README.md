@@ -21,12 +21,12 @@ A simple and versatile banking application simulator built using Kotlin. The app
 ### **Statement Generation**
 - Generate detailed account statements summarizing balances, transactions, and other critical data.
 
+### **Persistence**
+- **Database Integration**: Store account and transaction data persistently using SQLite.
+  
 ---
 
 ## **Planned Enhancements**
-
-### **Persistence**
-- **Database Integration**: Store account and transaction data persistently using SQLite or other database systems.
 
 ### **Frontend Development**
 - **Android App**: Create a mobile app for end-users using Kotlin.
