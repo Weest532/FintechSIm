@@ -19,9 +19,11 @@ object DatabaseHelper {
             CREATE TABLE IF NOT EXISTS accounts (
                 account_id TEXT PRIMARY KEY,
                 account_holder TEXT NOT NULL,
-                balance REAL NOT NULL
+                balance REAL NOT NULL,
+                password TEXT NOT NULL
             )
         """.trimIndent()
+
 
         // SQL for creating transactions table
         val createTransactionsTable = """
