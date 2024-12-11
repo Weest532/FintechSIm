@@ -48,7 +48,7 @@ A simple and versatile banking application simulator built using Kotlin. The app
 ### **Installation**
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/banking-app-simulator.git
+   git clone https://github.com/Weest532/FintechSIm.git
    ```
 2. Open the project in your preferred IDE.
 3. Run the `main.kt` file to execute the simulator.
