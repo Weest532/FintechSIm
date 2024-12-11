@@ -43,10 +43,7 @@ A simple and versatile banking application simulator built using Kotlin. The app
 ## **Getting Started**
 
 ### **Prerequisites**
-- Kotlin 1.5+
-- SQLite (optional for database integration)
-- Android Studio (for frontend development)
-- IntelliJ IDEA or any Kotlin-compatible IDE
+- SQLite 
 
 ### **Installation**
 1. Clone the repository:
